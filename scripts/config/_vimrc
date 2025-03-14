@@ -1,0 +1,97 @@
+" Vim with all enhancements
+source $VIMRUNTIME/vimrc_example.vim
+
+" Use the internal diff if available.
+" Otherwise use the special 'diffexpr' for Windows.
+if &diffopt !~# 'internal'
+  set diffexpr=MyDiff()
+endif
+function MyDiff()
+  let opt = '-a --binary '
+  if &diffopt =~ 'icase' | let opt = opt . '-i ' | endif
+  if &diffopt =~ 'iwhite' | let opt = opt . '-b ' | endif
+  let arg1 = v:fname_in
+  if arg1 =~ ' ' | let arg1 = '"' . arg1 . '"' | endif
+  let arg1 = substitute(arg1, '!', '\!', 'g')
+  let arg2 = v:fname_new
+  if arg2 =~ ' ' | let arg2 = '"' . arg2 . '"' | endif
+  let arg2 = substitute(arg2, '!', '\!', 'g')
+  let arg3 = v:fname_out
+  if arg3 =~ ' ' | let arg3 = '"' . arg3 . '"' | endif
+  let arg3 = substitute(arg3, '!', '\!', 'g')
+  if $VIMRUNTIME =~ ' '
+    if &sh =~ '\<cmd'
+      if empty(&shellxquote)
+        let l:shxq_sav = ''
+        set shellxquote&
+      endif
+      let cmd = '"' . $VIMRUNTIME . '\diff"'
+    else
+      let cmd = substitute($VIMRUNTIME, ' ', '" ', '') . '\diff"'
+    endif
+  else
+    let cmd = $VIMRUNTIME . '\diff'
+  endif
+  let cmd = substitute(cmd, '!', '\!', 'g')
+  silent execute '!' . cmd . ' ' . opt . arg1 . ' ' . arg2 . ' > ' . arg3
+  if exists('l:shxq_sav')
+    let &shellxquote=l:shxq_sav
+  endif
+endfunction
+
+if has ("gui_running")
+  if has("gui_win32")
+    set guifont=Consolas:h10:cANSI
+  endif
+endif
+
+"colorscheme clarity
+"colorscheme zenburn
+"colorscheme blue
+colorscheme darkblue
+"colorscheme default
+"colorscheme delek
+"colorscheme desert
+"colorscheme elflord
+sy on
+
+iabbr forx for (x = 0; x < 10; x++)<cr>{<cr><t><cr>}
+inoremap jj <Esc>
+nnoremap <tab> %
+vnoremap <tab> %
+nnoremap <leader>w <C-w>s<C-w>l
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
+
+set number
+
+map <C-s> <esc>:w<cr>a
+set nocompatible  " don't be compatbile with vi (should be set already...)
+set backspace=2   " can backspace past insert point, and will move up at
+                  " beginning-of-line
+set whichwrap=b,s,h,l,<,>,[,] " enable all, lets you arrow left/right and
+                              " 'x'/del from line to line when at EOL
+set expandtab     " convert tabs to spaces (do CTRL-V Tab if you need real tab)
+set shiftwidth=4  " distance to indent by default
+set tabstop=4
+set softtabstop=4
+set smarttab      " Tab at start of line will use shiftwidth instead of 'ts'
+set autoindent    " when starting new line, put cursor at indent of prev line
+set showmatch     " bounce the cursor between open/close paren, bracket, brace
+"set visualbell    " flash the terminal window rather than beep
+set ruler         " enable position indication (line/column & file percentage)
+
+set modelines=0
+
+set encoding=utf-8
+set scrolloff=3
+set showmode
+set showcmd
+set hidden
+set wildmenu
+set wildmode=list:longest
+set ttyfast
+set laststatus=2
+
