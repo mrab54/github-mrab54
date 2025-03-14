@@ -4,7 +4,7 @@
 # Script to bootstrap a fresh Ubuntu installation.
 # 
 # USAGE:
-#   curl -sSL "https://raw.githubusercontent.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPO>/main/init_ubuntu.sh" -o init_ubuntu.sh
+#   curl -sSL "https://raw.githubusercontent.com/mrab54/github-mrab54/master/init_ubuntu.sh" -o init_ubuntu.sh
 #   chmod +x init_ubuntu.sh
 #   sudo ./init_ubuntu.sh
 #
@@ -20,7 +20,7 @@ set -euo pipefail
 # -------------------------
 GITHUB_USERNAME="mrab54"
 REPO_NAME="github-mrab54"
-REPO_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/main/"
+REPO_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/master/"
 REPO_SCRIPTS_DIR="scripts"
 REPO_CONFIG_DIR="config/"
 
