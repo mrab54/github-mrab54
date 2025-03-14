@@ -16,6 +16,15 @@
 set -euo pipefail
 
 # -------------------------
+# Variables
+# -------------------------
+GITHUB_USERNAME="mrab54"
+REPO_NAME="github-mrab54"
+REPO_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/main/"
+REPO_SCRIPTS_DIR="scripts"
+REPO_CONFIG_DIR="config/"
+
+# -------------------------
 # Helper functions
 # -------------------------
 info()    { echo -e "\e[34m[INFO]\e[0m  $*"; }
@@ -124,7 +133,7 @@ info "Fetching custom .vimrc from GitHub..."
 if [[ -n "${SUDO_USER-}" && "${SUDO_USER}" != "root" ]]; then
   USER_HOME_DIR="$(eval echo ~${SUDO_USER})"
   sudo -u "${SUDO_USER}" bash <<EOF
-  curl -sSL "https://raw.githubusercontent.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPO>/main/.vimrc" -o "${USER_HOME_DIR}/.vimrc"
+  curl -sSL "${REPO_URL}${REPO_CONFIG_DIR}.vimrc" -o "${USER_HOME_DIR}/.vimrc"
 EOF
 fi
 
@@ -140,7 +149,7 @@ if [[ -n "${SUDO_USER-}" && "${SUDO_USER}" != "root" ]]; then
   if [[ ! -d "${NVM_DIR}" ]]; then
     # Download and run nvm install script as the sudo user
     sudo -u "${SUDO_USER}" bash <<EOF
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
 EOF
   fi
 
