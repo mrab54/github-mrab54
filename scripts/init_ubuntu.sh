@@ -23,6 +23,8 @@ REPO_NAME="github-mrab54"
 REPO_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/master/"
 REPO_SCRIPTS_DIR="scripts"
 REPO_CONFIG_DIR="config/"
+KEY_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/master/rab.pub"
+AUTHORIZED_KEYS_DIR="/home/rab/.ssh"
 
 # -------------------------
 # Helper functions
@@ -92,6 +94,14 @@ ufw enable
 # -------------------------
 # Configure SSH
 # -------------------------
+info "Configuring SSH keys"
+mkdir -p "$AUTHORIZED_KEYS_DIR"
+chmod 700 "$AUTHORIZED_KEYS_DIR"
+
+curl -sSL "$KEY_URL" >> "$AUTHORIZED_KEYS_DIR/authorized_keys"
+chmod 600 "$AUTHORIZED_KEYS_DIR/authorized_keys"
+chown -R rab:rab "$AUTHORIZED_KEYS_DIR"
+
 info "Configuring SSH to disable root login and allow password auth..."
 SSHD_CONFIG="/etc/ssh/sshd_config"
 
