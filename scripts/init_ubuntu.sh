@@ -23,8 +23,11 @@ REPO_NAME="github-mrab54"
 REPO_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/master/"
 REPO_SCRIPTS_DIR="scripts"
 REPO_CONFIG_DIR="config/"
-KEY_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/master/rab.pub"
-AUTHORIZED_KEYS_DIR="/home/rab/.ssh"
+
+USER="rab"
+USER_HOME="/home/${USER}"
+SSH_DIR="${USER_HOME}/.ssh"
+PUB_KEY_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/master/rab.pub"
 
 # -------------------------
 # Helper functions
@@ -94,13 +97,19 @@ ufw enable
 # -------------------------
 # Configure SSH
 # -------------------------
-info "Configuring SSH keys"
-mkdir -p "$AUTHORIZED_KEYS_DIR"
-chmod 700 "$AUTHORIZED_KEYS_DIR"
+info "Automating SSH key setup for ${USER}..."
 
-curl -sSL "$KEY_URL" >> "$AUTHORIZED_KEYS_DIR/authorized_keys"
-chmod 600 "$AUTHORIZED_KEYS_DIR/authorized_keys"
-chown -R rab:rab "$AUTHORIZED_KEYS_DIR"
+# Create .ssh and set perms
+mkdir -p "$SSH_DIR"
+chmod 700 "$SSH_DIR"
+chown ${USER}:${USER} "$SSH_DIR"
+
+# Fetch public key and append
+curl -sSL "$PUB_KEY_URL" >> "$SSH_DIR/authorized_keys"
+
+# Secure perms on authorized_keys
+chmod 600 "$SSH_DIR/authorized_keys"
+chown ${USER}:${USER} "$SSH_DIR/authorized_keys"
 
 info "Configuring SSH to disable root login and allow password auth..."
 SSHD_CONFIG="/etc/ssh/sshd_config"
