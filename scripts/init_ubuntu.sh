@@ -24,10 +24,18 @@ REPO_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/mast
 REPO_SCRIPTS_DIR="scripts"
 REPO_CONFIG_DIR="config/"
 
-USER="rab"
-USER_HOME="/home/${USER}"
+# Define target user - either the sudo user or a specified user
+TARGET_USER=${SUDO_USER:-"rab"}
+USER_HOME="/home/${TARGET_USER}"
 SSH_DIR="${USER_HOME}/.ssh"
 PUB_KEY_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/master/rab.pub"
+
+# Check if the target user exists
+if ! id -u "${TARGET_USER}" >/dev/null 2>&1; then
+  warning "User ${TARGET_USER} does not exist. Some operations may fail."
+  # Optionally: Create the user if missing
+  # useradd -m -s /bin/bash "${TARGET_USER}"
+fi
 
 # -------------------------
 # Helper functions
@@ -80,27 +88,33 @@ apt-get install -y \
 info "Enabling UFW firewall and allowing ports 22, 80, 8080, 3000, 3030..."
 
 ufw default deny incoming
-ufw default allow outgoing
-
-ufw allow 22/tcp
-ufw allow 80/tcp
-ufw allow 8080/tcp
-ufw allow 3000/tcp
-ufw allow 3030/tcp
-
 # If you want to allow SSH from anywhere, keep the 22 rule as is. 
 # For additional security, you can specify IP ranges, or use rate limiting:
 # ufw limit 22/tcp
 
-ufw enable
-
+# Enable UFW without prompting
+echo "y" | ufw enable
 # -------------------------
 # Configure SSH
 # -------------------------
-info "Automating SSH key setup for ${USER}..."
+info "Automating SSH key setup for ${TARGET_USER}..."
 
 # Create .ssh and set perms
 mkdir -p "$SSH_DIR"
+chmod 700 "$SSH_DIR"
+chown ${TARGET_USER}:${TARGET_USER} "$SSH_DIR"
+
+# Fetch public key and append
+if curl -sSL "$PUB_KEY_URL" -o /tmp/user.pub; then
+  cat /tmp/user.pub >> "$SSH_DIR/authorized_keys"
+  rm /tmp/user.pub
+else
+  warning "Failed to download SSH public key from $PUB_KEY_URL"
+fi
+
+# Secure perms on authorized_keys
+chmod 600 "$SSH_DIR/authorized_keys"
+chown ${TARGET_USER}:${TARGET_USER} "$SSH_DIR/authorized_keys"
 chmod 700 "$SSH_DIR"
 chown ${USER}:${USER} "$SSH_DIR"
 
@@ -219,28 +233,30 @@ if [[ -n "${SUDO_USER-}" && "${SUDO_USER}" != "root" ]]; then
       cat <<'BASHRC' >> "${USER_HOME_DIR}/.bashrc"
 
 # pyenv setup
-export PYENV_ROOT="\$HOME/.pyenv"
-export PATH="\$PYENV_ROOT/bin:\$PATH"
-if command -v pyenv 1>/dev/null 2>&1; then
-  eval "\$(pyenv init --path)"
-  eval "\$(pyenv init -)"
-fi
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
 BASHRC
-    fi
 
-    # Use pyenv to install latest stable Python, e.g. 3.11.x
-    export PYENV_ROOT="${USER_HOME_DIR}/.pyenv"
-    export PATH="\$PYENV_ROOT/bin:\$PATH"
-    if [ ! -d "\$PYENV_ROOT/plugins/python-build" ]; then
-      git clone https://github.com/pyenv/python-build.git "\$PYENV_ROOT/plugins/python-build"
-    fi
-
-    # Install the latest stable Python (example: 3.11.5)
-    # You can also run: pyenv install --list | grep -E '^[[:space:]]3\.'
-    # to see the available versions
+  # Install the latest Python stable version
+  export PYENV_ROOT="${USER_HOME_DIR}/.pyenv"
+  export PATH="$PYENV_ROOT/bin:$PATH"
+  eval "$(pyenv init -)"
+  
+  # Find the latest stable Python version - properly sorted with fallback
+  LATEST_STABLE=$(pyenv install --list | grep -E '^\s*3\.[0-9]+\.[0-9]+$' | grep -v "dev\|a\|b\|rc" | sort -V | tail -1 | tr -d '[:space:]')
+  
+  # Check if we found a version
+  if [[ -z "$LATEST_STABLE" ]]; then
+    echo "Could not determine latest Python version. Defaulting to 3.13.2"
     LATEST_STABLE="3.13.2"
-    pyenv install -s "\$LATEST_STABLE"
-    pyenv global "\$LATEST_STABLE"
+  else
+    echo "Latest stable Python version: $LATEST_STABLE"
+  fi
+  
+  # Install Python
+  pyenv install -s "$LATEST_STABLE"
+  pyenv global "$LATEST_STABLE"
 EOF
 fi
 
