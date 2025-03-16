@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# init_ubuntu.sh
-# Script to bootstrap a fresh Ubuntu installation (with upgrade and change detection).
+# init_ubuntu.sh - Corrected and Simplified
+#
+# Bootstraps an Ubuntu system, setting configurations for the user who invoked sudo.
 
 set -euo pipefail
 
@@ -11,21 +12,46 @@ REPO_NAME="github-mrab54"
 REPO_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/master/"
 REPO_SCRIPTS_DIR="scripts"
 REPO_CONFIG_DIR="config/"
-TARGET_USER=${SUDO_USER:-"rab"}
+
+# --- Get the Target User (the user who invoked sudo) ---
+# SUDO_USER is set by sudo to the original user.  This is what we want.
+# If SUDO_USER is not set (which would be unusual), we exit with an error.
+if [[ -z "${SUDO_USER}" ]]; then
+  echo "ERROR: SUDO_USER is not set.  This script must be run with sudo." >&2
+  exit 1
+fi
+
+TARGET_USER="${SUDO_USER}"
 USER_HOME="/home/${TARGET_USER}"
 SSH_DIR="${USER_HOME}/.ssh"
 PUB_KEY_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/master/rab.pub"
+
 
 # Helper functions
 info()    { echo -e "\e[34m[INFO]\e[0m  $*"; }
 warning() { echo -e "\e[33m[WARN]\e[0m  $*"; }
 error()   { echo -e "\e[31m[ERROR]\e[0m $*" >&2; }
 
-# Check if root/sudo
+# Check if root/sudo (This is redundant now, but harmless)
 if [[ $EUID -ne 0 ]]; then
-  error "This script must be run with sudo or as root."
+  error "This script must be run with sudo or as root." # This should never happen
   exit 1
 fi
+
+# --- Debugging: Echo Variables ---
+echo "----------------------------------------"
+echo "Debugging Variables:"
+echo "  GITHUB_USERNAME: ${GITHUB_USERNAME}"
+echo "  REPO_NAME: ${REPO_NAME}"
+echo "  REPO_URL: ${REPO_URL}"
+echo "  REPO_SCRIPTS_DIR: ${REPO_SCRIPTS_DIR}"
+echo "  REPO_CONFIG_DIR: ${REPO_CONFIG_DIR}"
+echo "  SUDO_USER: ${SUDO_USER}"
+echo "  TARGET_USER: ${TARGET_USER}"
+echo "  USER_HOME: ${USER_HOME}"
+echo "  SSH_DIR: ${SSH_DIR}"
+echo "  PUB_KEY_URL: ${PUB_KEY_URL}"
+echo "----------------------------------------"
 
 # Check/create user
 if ! id -u "${TARGET_USER}" >/dev/null 2>&1; then
@@ -35,6 +61,9 @@ if ! id -u "${TARGET_USER}" >/dev/null 2>&1; then
     exit 1
   }
 fi
+
+# Ensure the user's home directory has correct ownership.
+chown -R "${TARGET_USER}:${TARGET_USER}" "${USER_HOME}"
 
 # Update package list
 info "Updating package list..."
@@ -111,18 +140,10 @@ sed -i -E -e '/PasswordAuthentication[[:space:]]+(yes|no)/s/(PasswordAuthenticat
 systemctl restart ssh
 
 # --- Persistent History (Idempotent) ---
-if [[ "${SUDO_USER}" != "root" ]] && [[ -n "${SUDO_USER}" ]]; then
-  CURRENT_USER="${SUDO_USER}"
-else
-  CURRENT_USER="${TARGET_USER}"
-fi
-
-if [[ "${CURRENT_USER}" != "root" ]]; then
-  info "Configuring persistent shell history for ${CURRENT_USER}..."
-
-  sudo -u "${CURRENT_USER}" bash <<'EOF'
-  if ! grep -q "Persistent History" "$HOME/.bashrc"; then
-    cat <<'INNER_EOF' >> "$HOME/.bashrc"
+info "Configuring persistent shell history for ${TARGET_USER}..."
+sudo -u "${TARGET_USER}" bash <<'EOF'
+if ! grep -q "Persistent History" "$HOME/.bashrc"; then
+  cat <<'INNER_EOF' >> "$HOME/.bashrc"
 
 # -------------- Persistent History --------------
 # Append to history, don't overwrite
@@ -135,32 +156,17 @@ PROMPT_COMMAND="history -a; history -n; \$PROMPT_COMMAND"
 export HISTSIZE=100000
 export HISTFILESIZE=100000
 INNER_EOF
-  fi
-EOF
 fi
+EOF
 
 # --- .vimrc (Simplified - Always Overwrite) ---
 info "Fetching and overwriting custom .vimrc from GitHub..."
-if [[ "${SUDO_USER}" != "root" ]] && [[ -n "${SUDO_USER}" ]]; then
-    CURRENT_USER="${SUDO_USER}"
-else
-    CURRENT_USER="${TARGET_USER}"
-fi
+sudo -u "${TARGET_USER}" bash -c "curl -sSL '${REPO_URL}${REPO_CONFIG_DIR}.vimrc' -o '$HOME/.vimrc'"
 
-if [[ "${CURRENT_USER}" != "root" ]]; then
-  sudo -u "${CURRENT_USER}" bash -c "curl -sSL '${REPO_URL}${REPO_CONFIG_DIR}.vimrc' -o '$HOME/.vimrc'"
-fi
 
 # --- NVM (Idempotent) ---
 info "Installing nvm and Node.js LTS..."
-if [[ "${SUDO_USER}" != "root" ]] && [[ -n "${SUDO_USER}" ]]; then
-  CURRENT_USER="${SUDO_USER}"
-else
-  CURRENT_USER="${TARGET_USER}"
-fi
-
-if [[ "${CURRENT_USER}" != "root" ]]; then
-    sudo -u "${CURRENT_USER}" bash <<EOF
+sudo -u "${TARGET_USER}" bash <<EOF
     NVM_DIR="$HOME/.nvm"  # Use $HOME for the NVM directory
     if [[ ! -d "${NVM_DIR}" ]]; then
       curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
@@ -171,49 +177,40 @@ if [[ "${CURRENT_USER}" != "root" ]]; then
     nvm use --lts
     npm install --global pnpm
 EOF
-fi
 
 # --- pyenv (Idempotent) ---
 info "Installing pyenv and a newer Python version..."
-if [[ "${SUDO_USER}" != "root" ]] && [[ -n "${SUDO_USER}" ]]; then
-  CURRENT_USER="${SUDO_USER}"
-else
-  CURRENT_USER="${TARGET_USER}"
+sudo -u "${TARGET_USER}" bash <<EOF
+if [ ! -d "$HOME/.pyenv" ]; then
+  git clone https://github.com/pyenv/pyenv.git "$HOME/.pyenv"
 fi
 
-if [[ "${CURRENT_USER}" != "root" ]]; then
-  sudo -u "${CURRENT_USER}" bash <<EOF
-    if [ ! -d "$HOME/.pyenv" ]; then
-      git clone https://github.com/pyenv/pyenv.git "$HOME/.pyenv"
-    fi
-
-    # Use $HOME directly inside the here-document
-    if ! grep -q 'export PYENV_ROOT=' "$HOME/.pyenv"; then
-      cat <<'BASHRC' >> "$HOME/.bashrc"
+# Use $HOME directly inside the here-document
+if ! grep -q 'export PYENV_ROOT=' "$HOME/.pyenv"; then
+  cat <<'BASHRC' >> "$HOME/.bashrc"
 
 # pyenv setup
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
 BASHRC
-    fi
-
-  export PYENV_ROOT="$HOME/.pyenv"
-  export PATH="$PYENV_ROOT/bin:$PATH"
-  eval "$(pyenv init -)"
-
-    LATEST_STABLE=$(pyenv install --list | grep -E '^\s*3\.[0-9]+\.[0-9]+$' | grep -v "dev\|a\|b\|rc" | sort -V | tail -1 | tr -d '[:space:]')
-
-    if [[ -z "$LATEST_STABLE" ]]; then
-      echo "Could not determine latest Python version. Defaulting to 3.13.2"
-      LATEST_STABLE="3.13.2"
-    else
-      echo "Latest stable Python version: $LATEST_STABLE"
-    fi
-    pyenv install -s "$LATEST_STABLE"
-    pyenv global "$LATEST_STABLE"
-EOF
 fi
+
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+
+LATEST_STABLE=$(pyenv install --list | grep -E '^\s*3\.[0-9]+\.[0-9]+$' | grep -v "dev\|a\|b\|rc" | sort -V | tail -1 | tr -d '[:space:]')
+
+if [[ -z "$LATEST_STABLE" ]]; then
+  echo "Could not determine latest Python version. Defaulting to 3.13.2"
+  LATEST_STABLE="3.13.2"
+else
+  echo "Latest stable Python version: $LATEST_STABLE"
+fi
+pyenv install -s "$LATEST_STABLE"
+pyenv global "$LATEST_STABLE"
+EOF
 
 # --- Clean Up ---
 info "Cleaning up..."
