@@ -143,8 +143,8 @@ systemctl restart ssh
 # --- Persistent History (Idempotent) ---
 info "Configuring persistent shell history for ${TARGET_USER}..."
 sudo -u "${TARGET_USER}" bash <<'EOF'
-if ! grep -q "Persistent History" "$HOME/.bashrc"; then
-  cat <<'INNER_EOF' >> "$HOME/.bashrc"
+if ! grep -q "Persistent History" "$USER_HOME/.bashrc"; then
+  cat <<'INNER_EOF' >> "$USER_HOME/.bashrc"
 
 # -------------- Persistent History --------------
 # Append to history, don't overwrite
@@ -162,14 +162,14 @@ EOF
 
 # --- .vimrc (Simplified - Always Overwrite) ---
 info "Fetching and overwriting custom .vimrc from GitHub..."
-info "TARGET_USER: ${TARGET_USER} REPO_URL: ${REPO_URL} REPO_CONFIG_DIR: ${REPO_CONFIG_DIR} HOME: $HOME"
-sudo -u "${TARGET_USER}" bash -c "curl -sSL '${REPO_URL}/${REPO_CONFIG_DIR}/.vimrc' -o '$HOME/.vimrc'"
+info "TARGET_USER: ${TARGET_USER} REPO_URL: ${REPO_URL} REPO_CONFIG_DIR: ${REPO_CONFIG_DIR} HOME: $USER_HOME"
+sudo -u "${TARGET_USER}" bash -c "curl -sSL '${REPO_URL}/${REPO_CONFIG_DIR}/.vimrc' -o '$USER_HOME/.vimrc'"
 
 
 # --- NVM (Idempotent) ---
 info "Installing nvm and Node.js LTS..."
 sudo -u "${TARGET_USER}" bash <<EOF
-    NVM_DIR="$HOME/.nvm"  # Use $HOME for the NVM directory
+    NVM_DIR="$USER_HOME/.nvm"  # Use $USER_HOME for the NVM directory
     if [[ ! -d "${NVM_DIR}" ]]; then
       curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
     fi
@@ -183,22 +183,22 @@ EOF
 # --- pyenv (Idempotent) ---
 info "Installing pyenv and a newer Python version..."
 sudo -u "${TARGET_USER}" bash <<EOF
-if [ ! -d "$HOME/.pyenv" ]; then
-  git clone https://github.com/pyenv/pyenv.git "$HOME/.pyenv"
+if [ ! -d "$USER_HOME/.pyenv" ]; then
+  git clone https://github.com/pyenv/pyenv.git "$USER_HOME/.pyenv"
 fi
 
-# Use $HOME directly inside the here-document
-if ! grep -q 'export PYENV_ROOT=' "$HOME/.pyenv"; then
-  cat <<'BASHRC' >> "$HOME/.bashrc"
+# Use $USER_HOME directly inside the here-document
+if ! grep -q 'export PYENV_ROOT=' "$USER_HOME/.pyenv"; then
+  cat <<'BASHRC' >> "$USER_HOME/.bashrc"
 
 # pyenv setup
-export PYENV_ROOT="$HOME/.pyenv"
+export PYENV_ROOT="$USER_HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
 BASHRC
 fi
 
-export PYENV_ROOT="$HOME/.pyenv"
+export PYENV_ROOT="$USER_HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
 
