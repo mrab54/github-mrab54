@@ -9,9 +9,9 @@ set -euo pipefail
 # Variables
 GITHUB_USERNAME="mrab54"
 REPO_NAME="github-mrab54"
-REPO_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/master/"
+REPO_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/master"
 REPO_SCRIPTS_DIR="scripts"
-REPO_CONFIG_DIR="config/"
+REPO_CONFIG_DIR="config"
 
 # --- Get the Target User (the user who invoked sudo) ---
 # SUDO_USER is set by sudo to the original user.  This is what we want.
@@ -24,7 +24,7 @@ fi
 TARGET_USER="${SUDO_USER}"
 USER_HOME="/home/${TARGET_USER}"
 SSH_DIR="${USER_HOME}/.ssh"
-PUB_KEY_URL="${REPO_URL}${REPO_CONFIG_DIR}rab.pub"
+PUB_KEY_URL="${REPO_URL}/${REPO_CONFIG_DIR}/rab.pub"
 # PUB_KEY_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/master/rab.pub"
 
 
@@ -162,7 +162,7 @@ EOF
 
 # --- .vimrc (Simplified - Always Overwrite) ---
 info "Fetching and overwriting custom .vimrc from GitHub..."
-sudo -u "${TARGET_USER}" bash -c "curl -sSL '${REPO_URL}${REPO_CONFIG_DIR}.vimrc' -o '$HOME/.vimrc'"
+sudo -u "${TARGET_USER}" bash -c "curl -sSL '${REPO_URL}/${REPO_CONFIG_DIR}/.vimrc' -o '$HOME/.vimrc'"
 
 
 # --- NVM (Idempotent) ---
