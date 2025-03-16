@@ -139,8 +139,8 @@ INNER_EOF
 EOF
 fi
 
-# --- .vimrc (Idempotent) ---
-info "Fetching custom .vimrc from GitHub..."
+# --- .vimrc (Simplified - Always Overwrite) ---
+info "Fetching and overwriting custom .vimrc from GitHub..."
 if [[ "${SUDO_USER}" != "root" ]] && [[ -n "${SUDO_USER}" ]]; then
     CURRENT_USER="${SUDO_USER}"
 else
@@ -148,18 +148,9 @@ else
 fi
 
 if [[ "${CURRENT_USER}" != "root" ]]; then
-    sudo -u "${CURRENT_USER}" bash <<EOF
-        # Compare checksums to ensure idempotency, only if .vimrc exists
-        NEW_VIMRC_CHECKSUM=$(curl -sSL "${REPO_URL}${REPO_CONFIG_DIR}.vimrc" | md5sum | cut -d ' ' -f 1)
-        if [[ -z "$NEW_VIMRC_CHECKSUM" ]]; then
-          error "Failed to fetch .vimrc or compute checksum."
-          exit 1
-        fi
-        if [[ ! -f "$HOME/.vimrc" ]] || [[ "$(if [[ -f "$HOME/.vimrc" ]]; then md5sum "$HOME/.vimrc" | cut -d ' ' -f 1; fi)" != "${NEW_VIMRC_CHECKSUM}" ]]; then
-            curl -sSL "${REPO_URL}${REPO_CONFIG_DIR}.vimrc" -o "$HOME/.vimrc"
-        fi
-EOF
+  sudo -u "${CURRENT_USER}" bash -c "curl -sSL '${REPO_URL}${REPO_CONFIG_DIR}.vimrc' -o '$HOME/.vimrc'"
 fi
+
 # --- NVM (Idempotent) ---
 info "Installing nvm and Node.js LTS..."
 if [[ "${SUDO_USER}" != "root" ]] && [[ -n "${SUDO_USER}" ]]; then
