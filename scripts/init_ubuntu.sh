@@ -233,7 +233,7 @@ if ! grep -q 'export PYENV_ROOT=' "$HOME/.bashrc"; then
 # ---- pyenv setup ----
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
-eval "\$(pyenv init -)"
+eval "$(pyenv init -)"
 BASHRC
 fi
 
