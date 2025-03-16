@@ -167,12 +167,50 @@ sudo -u "${TARGET_USER}" bash -c "curl -sSL '${REPO_URL}/${REPO_CONFIG_DIR}/.vim
 
 
 # --- NVM (Idempotent) ---
-info "Installing nvm and Node.js LTS..."
-sudo -u "${TARGET_USER}"  bash -c "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash"
-sudo -u "${TARGET_USER}" bash -c "export NVM_DIR=\"\$HOME/.nvm\" && [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\"  && nvm use --lts && pnpm install --global yarn"
+# info "Installing nvm and Node.js LTS..."
+# sudo -u "${TARGET_USER}"  bash -c "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash"
+# sudo -u "${TARGET_USER}" bash -c "export NVM_DIR=\"\$HOME/.nvm\" && [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\"  && nvm use --lts && pnpm install --global yarn"
 # sudo -u "${TARGET_USER}" bash -c "nvm install --lts"
 # sudo -u "${TARGET_USER}" bash -c "nvm use --lts"
 # sudo -u "${TARGET_USER}" bash -c "npm install --global pnpm"
+# --- NVM & pnpm (Idempotent) ---
+info "Installing nvm, pnpm, and Node.js LTS..."
+
+sudo -u "${TARGET_USER}" bash <<'EOF'
+# Install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
+
+# Load nvm (this is for the current subshell)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+nvm install --lts
+nvm use --lts
+
+# Install pnpm
+curl -fsSL https://get.pnpm.io/install.sh | sh -
+# Persist pnpm env variables
+if ! grep -q 'export PNPM_HOME=' "$HOME/.bashrc"; then
+  cat <<'BASHRC' >> "$HOME/.bashrc"
+
+# ---- pnpm setup ----
+export PNPM_HOME="$HOME/.local/share/pnpm"
+export PATH="$PNPM_HOME:$PATH"
+eval "$(pnpm env use --shell bash)"
+BASHRC
+fi
+
+# For the current shell, do the same
+export PNPM_HOME="$HOME/.local/share/pnpm"
+export PATH="$PNPM_HOME:$PATH"
+
+# Setting up pnpm environment so the global bin directory is created
+pnpm setup
+
+# Example: install yarn globally via pnpm
+pnpm add --global yarn
+EOF
+
 
 # --- pyenv (Idempotent) ---
 info "Installing pyenv and a newer Python version..."
