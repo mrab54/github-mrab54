@@ -214,7 +214,7 @@ EOF
 
 # --- pyenv (Idempotent) ---
 info "Installing pyenv and a newer Python version..."
-sudo -u "${TARGET_USER}" bash <<EOF
+sudo -u "${TARGET_USER}" bash <<'EOF'
 set -euo pipefail
 
 # 1) Define $PYENV_ROOT before any usage
