@@ -24,7 +24,8 @@ fi
 TARGET_USER="${SUDO_USER}"
 USER_HOME="/home/${TARGET_USER}"
 SSH_DIR="${USER_HOME}/.ssh"
-PUB_KEY_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/master/rab.pub"
+PUB_KEY_URL="${REPO_URL}${REPO_CONFIG_DIR}rab.pub"
+# PUB_KEY_URL="https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/master/rab.pub"
 
 
 # Helper functions
