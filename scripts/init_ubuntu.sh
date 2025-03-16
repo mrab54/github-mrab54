@@ -151,6 +151,10 @@ if [[ "${CURRENT_USER}" != "root" ]]; then
     sudo -u "${CURRENT_USER}" bash <<EOF
         # Compare checksums to ensure idempotency, only if .vimrc exists
         NEW_VIMRC_CHECKSUM=$(curl -sSL "${REPO_URL}${REPO_CONFIG_DIR}.vimrc" | md5sum | cut -d ' ' -f 1)
+        if [[ -z "$NEW_VIMRC_CHECKSUM" ]]; then
+          error "Failed to fetch .vimrc or compute checksum."
+          exit 1
+        fi
         if [[ ! -f "$HOME/.vimrc" ]] || [[ "$(if [[ -f "$HOME/.vimrc" ]]; then md5sum "$HOME/.vimrc" | cut -d ' ' -f 1; fi)" != "${NEW_VIMRC_CHECKSUM}" ]]; then
             curl -sSL "${REPO_URL}${REPO_CONFIG_DIR}.vimrc" -o "$HOME/.vimrc"
         fi
