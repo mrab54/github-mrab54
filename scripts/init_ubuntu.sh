@@ -142,21 +142,20 @@ fi
 # --- .vimrc (Idempotent) ---
 info "Fetching custom .vimrc from GitHub..."
 if [[ "${SUDO_USER}" != "root" ]] && [[ -n "${SUDO_USER}" ]]; then
-  CURRENT_USER="${SUDO_USER}"
+    CURRENT_USER="${SUDO_USER}"
 else
-  CURRENT_USER="${TARGET_USER}"
+    CURRENT_USER="${TARGET_USER}"
 fi
 
 if [[ "${CURRENT_USER}" != "root" ]]; then
     sudo -u "${CURRENT_USER}" bash <<EOF
-    # Compare checksums to ensure idempotency
-    NEW_VIMRC_CHECKSUM=$(curl -sSL "${REPO_URL}${REPO_CONFIG_DIR}.vimrc" | md5sum)
-    if [[ ! -f "$HOME/.vimrc" ]] || [[ "$(md5sum "$HOME/.vimrc" | cut -d ' ' -f 1)" != "${NEW_VIMRC_CHECKSUM%% *}" ]]; then
-        curl -sSL "${REPO_URL}${REPO_CONFIG_DIR}.vimrc" -o "$HOME/.vimrc"
-    fi
+        # Compare checksums to ensure idempotency, only if .vimrc exists
+        NEW_VIMRC_CHECKSUM=$(curl -sSL "${REPO_URL}${REPO_CONFIG_DIR}.vimrc" | md5sum | cut -d ' ' -f 1)
+        if [[ ! -f "$HOME/.vimrc" ]] || [[ "$(if [[ -f "$HOME/.vimrc" ]]; then md5sum "$HOME/.vimrc" | cut -d ' ' -f 1; fi)" != "${NEW_VIMRC_CHECKSUM}" ]]; then
+            curl -sSL "${REPO_URL}${REPO_CONFIG_DIR}.vimrc" -o "$HOME/.vimrc"
+        fi
 EOF
 fi
-
 # --- NVM (Idempotent) ---
 info "Installing nvm and Node.js LTS..."
 if [[ "${SUDO_USER}" != "root" ]] && [[ -n "${SUDO_USER}" ]]; then
