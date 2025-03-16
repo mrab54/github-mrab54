@@ -118,25 +118,25 @@ else
 fi
 
 if [[ "${CURRENT_USER}" != "root" ]]; then
-  USER_HOME_DIR="$(eval echo ~${CURRENT_USER})"
-  BASHRC="${USER_HOME_DIR}/.bashrc"
-  info "Configuring persistent shell history in ${BASHRC}..."
+  info "Configuring persistent shell history for ${CURRENT_USER}..."
 
-  if ! grep -q "Persistent History" "${BASHRC}"; then
-    cat << 'EOF' >> "${BASHRC}"
+  sudo -u "${CURRENT_USER}" bash <<'EOF'
+  if ! grep -q "Persistent History" "$HOME/.bashrc"; then
+    cat <<'INNER_EOF' >> "$HOME/.bashrc"
 
 # -------------- Persistent History --------------
 # Append to history, don't overwrite
 shopt -s histappend
 
 # Save and reload after each command
-PROMPT_COMMAND="history -a; history -n; $PROMPT_COMMAND"
+PROMPT_COMMAND="history -a; history -n; \$PROMPT_COMMAND"
 
 # Bigger history limits
 export HISTSIZE=100000
 export HISTFILESIZE=100000
-EOF
+INNER_EOF
   fi
+EOF
 fi
 
 # --- .vimrc (Idempotent) ---
@@ -148,12 +148,13 @@ else
 fi
 
 if [[ "${CURRENT_USER}" != "root" ]]; then
-  USER_HOME_DIR="$(eval echo ~${CURRENT_USER})"
-  # Compare checksums to ensure idempotency
-  NEW_VIMRC_CHECKSUM=$(curl -sSL "${REPO_URL}${REPO_CONFIG_DIR}.vimrc" | md5sum)
-  if [[ ! -f "${USER_HOME_DIR}/.vimrc" ]] || [[ "$(md5sum "${USER_HOME_DIR}/.vimrc" | cut -d ' ' -f 1)" != "${NEW_VIMRC_CHECKSUM%% *}" ]]; then
-    sudo -u "${CURRENT_USER}" bash -c "curl -sSL '${REPO_URL}${REPO_CONFIG_DIR}.vimrc' -o '${USER_HOME_DIR}/.vimrc'"
-  fi
+    sudo -u "${CURRENT_USER}" bash <<EOF
+    # Compare checksums to ensure idempotency
+    NEW_VIMRC_CHECKSUM=$(curl -sSL "${REPO_URL}${REPO_CONFIG_DIR}.vimrc" | md5sum)
+    if [[ ! -f "$HOME/.vimrc" ]] || [[ "$(md5sum "$HOME/.vimrc" | cut -d ' ' -f 1)" != "${NEW_VIMRC_CHECKSUM%% *}" ]]; then
+        curl -sSL "${REPO_URL}${REPO_CONFIG_DIR}.vimrc" -o "$HOME/.vimrc"
+    fi
+EOF
 fi
 
 # --- NVM (Idempotent) ---
@@ -165,10 +166,8 @@ else
 fi
 
 if [[ "${CURRENT_USER}" != "root" ]]; then
-    USER_HOME_DIR="$(eval echo ~${CURRENT_USER})"
-    NVM_DIR="${USER_HOME_DIR}/.nvm"
-
     sudo -u "${CURRENT_USER}" bash <<EOF
+    NVM_DIR="$HOME/.nvm"  # Use $HOME for the NVM directory
     if [[ ! -d "${NVM_DIR}" ]]; then
       curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
     fi
@@ -189,24 +188,23 @@ else
 fi
 
 if [[ "${CURRENT_USER}" != "root" ]]; then
-  USER_HOME_DIR="$(eval echo ~${CURRENT_USER})"
-
   sudo -u "${CURRENT_USER}" bash <<EOF
-    if [ ! -d "${USER_HOME_DIR}/.pyenv" ]; then
-      git clone https://github.com/pyenv/pyenv.git "${USER_HOME_DIR}/.pyenv"
+    if [ ! -d "$HOME/.pyenv" ]; then
+      git clone https://github.com/pyenv/pyenv.git "$HOME/.pyenv"
     fi
 
-    if ! grep -q 'export PYENV_ROOT="\$HOME/.pyenv"' "${USER_HOME_DIR}/.bashrc"; then
-      cat <<'BASHRC' >> "${USER_HOME_DIR}/.bashrc"
+    # Use $HOME directly inside the here-document
+    if ! grep -q 'export PYENV_ROOT=' "$HOME/.pyenv"; then
+      cat <<'BASHRC' >> "$HOME/.bashrc"
 
 # pyenv setup
-export PYENV_ROOT="\$HOME/.pyenv"
+export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
 BASHRC
     fi
 
-  export PYENV_ROOT="${USER_HOME_DIR}/.pyenv"
+  export PYENV_ROOT="$HOME/.pyenv"
   export PATH="$PYENV_ROOT/bin:$PATH"
   eval "$(pyenv init -)"
 
