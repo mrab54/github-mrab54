@@ -143,8 +143,8 @@ systemctl restart ssh
 # --- Persistent History (Idempotent) ---
 info "Configuring persistent shell history for ${TARGET_USER}..."
 sudo -u "${TARGET_USER}" bash <<'EOF'
-if ! grep -q "Persistent History" "$USER_HOME/.bashrc"; then
-  cat <<'INNER_EOF' >> "$USER_HOME/.bashrc"
+if ! grep -q "Persistent History" "$HOME/.bashrc"; then
+  cat <<'INNER_EOF' >> "$HOME/.bashrc"
 
 # -------------- Persistent History --------------
 # Append to history, don't overwrite
@@ -169,7 +169,7 @@ sudo -u "${TARGET_USER}" bash -c "curl -sSL '${REPO_URL}/${REPO_CONFIG_DIR}/.vim
 # --- NVM (Idempotent) ---
 info "Installing nvm and Node.js LTS..."
 sudo -u "${TARGET_USER}" bash <<EOF
-    NVM_DIR="$USER_HOME/.nvm"  # Use $USER_HOME for the NVM directory
+    NVM_DIR="$HOME/.nvm"  # Use $HOME for the NVM directory
     if [[ ! -d "${NVM_DIR}" ]]; then
       curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
     fi
@@ -183,22 +183,22 @@ EOF
 # --- pyenv (Idempotent) ---
 info "Installing pyenv and a newer Python version..."
 sudo -u "${TARGET_USER}" bash <<EOF
-if [ ! -d "$USER_HOME/.pyenv" ]; then
-  git clone https://github.com/pyenv/pyenv.git "$USER_HOME/.pyenv"
+if [ ! -d "$HOME/.pyenv" ]; then
+  git clone https://github.com/pyenv/pyenv.git "$HOME/.pyenv"
 fi
 
-# Use $USER_HOME directly inside the here-document
-if ! grep -q 'export PYENV_ROOT=' "$USER_HOME/.pyenv"; then
-  cat <<'BASHRC' >> "$USER_HOME/.bashrc"
+# Use $HOME directly inside the here-document
+if ! grep -q 'export PYENV_ROOT=' "$HOME/.pyenv"; then
+  cat <<'BASHRC' >> "$HOME/.bashrc"
 
 # pyenv setup
-export PYENV_ROOT="$USER_HOME/.pyenv"
+export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
 BASHRC
 fi
 
-export PYENV_ROOT="$USER_HOME/.pyenv"
+export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
 
