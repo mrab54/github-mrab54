@@ -215,33 +215,44 @@ EOF
 # --- pyenv (Idempotent) ---
 info "Installing pyenv and a newer Python version..."
 sudo -u "${TARGET_USER}" bash <<EOF
-if [ ! -d "$HOME/.pyenv" ]; then
-  git clone https://github.com/pyenv/pyenv.git "$HOME/.pyenv"
+set -euo pipefail
+
+# 1) Define $PYENV_ROOT before any usage
+export PYENV_ROOT="${PYENV_ROOT:-"$HOME/.pyenv"}"
+export PATH="$PYENV_ROOT/bin:$PATH"
+
+# 2) If pyenv not present, clone it
+if [ ! -d "$PYENV_ROOT" ]; then
+  git clone https://github.com/pyenv/pyenv.git "$PYENV_ROOT"
 fi
 
-# Use $HOME directly inside the here-document
-if ! grep -q 'export PYENV_ROOT=' "$HOME/.pyenv"; then
+# 3) Make pyenv initialization persistent
+if ! grep -q 'export PYENV_ROOT=' "$HOME/.bashrc"; then
   cat <<'BASHRC' >> "$HOME/.bashrc"
 
-# pyenv setup
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
+# ---- pyenv setup ----
+export PYENV_ROOT="\$HOME/.pyenv"
+export PATH="\$PYENV_ROOT/bin:\$PATH"
+eval "\$(pyenv init -)"
 BASHRC
 fi
 
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
+# 4) Actually initialize in this shell
 eval "$(pyenv init -)"
 
-LATEST_STABLE=$(pyenv install --list | grep -E '^\s*3\.[0-9]+\.[0-9]+$' | grep -v "dev\|a\|b\|rc" | sort -V | tail -1 | tr -d '[:space:]')
+# 5) Install the latest stable python
+LATEST_STABLE=$(pyenv install --list \
+  | grep -E '^\s*3\.[0-9]+\.[0-9]+$' \
+  | grep -v 'dev\|a\|b\|rc' \
+  | sort -V | tail -1 | tr -d '[:space:]')
 
 if [[ -z "$LATEST_STABLE" ]]; then
-  echo "Could not determine latest Python version. Defaulting to 3.13.2"
+  echo "Could not determine latest stable Python version. Defaulting to 3.13.2"
   LATEST_STABLE="3.13.2"
 else
   echo "Latest stable Python version: $LATEST_STABLE"
 fi
+
 pyenv install -s "$LATEST_STABLE"
 pyenv global "$LATEST_STABLE"
 EOF
