@@ -162,6 +162,7 @@ EOF
 
 # --- .vimrc (Simplified - Always Overwrite) ---
 info "Fetching and overwriting custom .vimrc from GitHub..."
+info "TARGET_USER: ${TARGET_USER} REPO_URL: ${REPO_URL} REPO_CONFIG_DIR: ${REPO_CONFIG_DIR} HOME: $HOME"
 sudo -u "${TARGET_USER}" bash -c "curl -sSL '${REPO_URL}/${REPO_CONFIG_DIR}/.vimrc' -o '$HOME/.vimrc'"
 
 
