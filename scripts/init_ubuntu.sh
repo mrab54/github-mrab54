@@ -168,17 +168,10 @@ sudo -u "${TARGET_USER}" bash -c "curl -sSL '${REPO_URL}/${REPO_CONFIG_DIR}/.vim
 
 # --- NVM (Idempotent) ---
 info "Installing nvm and Node.js LTS..."
-sudo -u "${TARGET_USER}" bash <<EOF
-    NVM_DIR="$HOME/.nvm"  # Use $HOME for the NVM directory
-    if [[ ! -d "${NVM_DIR}" ]]; then
-      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
-    fi
-    export NVM_DIR="${NVM_DIR}"
-    [ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh"
-    nvm install --lts
-    nvm use --lts
-    npm install --global pnpm
-EOF
+sudo -u "${TARGET_USER}"  bash -c "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash"
+sudo -u "${TARGET_USER}" bash -c "nvm install --lts"
+sudo -u "${TARGET_USER}" bash -c "nvm use --lts"
+sudo -u "${TARGET_USER}" bash -c "npm install --global pnpm"
 
 # --- pyenv (Idempotent) ---
 info "Installing pyenv and a newer Python version..."
