@@ -100,7 +100,7 @@ apt-get install -y \
   tcpdump nmap dnsutils whois build-essential software-properties-common \
   htop ca-certificates ufw make libssl-dev zlib1g-dev libbz2-dev \
   libreadline-dev libsqlite3-dev libffi-dev liblzma-dev postgresql \
-  postgresql-contrib libpq-dev python3-dev
+  postgresql-contrib libpq-dev python3-dev glances
 
 # UFW setup
 info "Configuring UFW firewall..."
