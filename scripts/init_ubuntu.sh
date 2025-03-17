@@ -96,7 +96,7 @@ rm /tmp/pre_upgrade_packages /tmp/post_upgrade_packages
 # Install packages
 info "Installing packages..."
 apt-get install -y \
-  curl wget git jq vim neovim tmux traceroute net-tools iputils-ping \
+  nasm yasm curl wget git jq vim neovim tmux traceroute net-tools iputils-ping \
   tcpdump nmap dnsutils whois build-essential software-properties-common \
   htop ca-certificates ufw make libssl-dev zlib1g-dev libbz2-dev \
   libreadline-dev libsqlite3-dev libffi-dev liblzma-dev postgresql \
