@@ -68,6 +68,9 @@ chown -R "${TARGET_USER}:${TARGET_USER}" "${USER_HOME}"
 
 # Update package list
 info "Updating package list..."
+add-apt-repository universe
+add-apt-repository multiverse
+apt update
 apt-get update -y
 
 # --- Record pre-upgrade package state ---
@@ -95,6 +98,9 @@ rm /tmp/pre_upgrade_packages /tmp/post_upgrade_packages
 
 # Install packages
 info "Installing packages..."
+
+
+
 apt-get install -y \
   nasm yasm curl wget git jq vim neovim tmux traceroute net-tools iputils-ping \
   tcpdump nmap dnsutils whois build-essential software-properties-common \
@@ -103,7 +109,19 @@ apt-get install -y \
   postgresql-contrib libpq-dev python3-dev glances libgl1 \
   autoconf automake build-essential cmake git libtool pkg-config texinfo \
   libass-dev libfreetype6-dev libgnutls28-dev libvorbis-dev libx264-dev libx265-dev libnuma-dev \
-  libvpx-dev libfdk-aac-dev libmp3lame-dev libopus-dev libunistring-dev libdrm-dev
+  libvpx-dev libfdk-aac-dev libmp3lame-dev libopus-dev libunistring-dev libdrm-dev \
+  autoconf automake build-essential cmake git libtool pkg-config texinfo \
+  curl wget yasm nasm libunistring-dev libssl-dev libgnutls28-dev \
+  libdrm-dev libxext-dev libxfixes-dev zlib1g-dev libxml2-dev libfreetype6-dev \
+  libfribidi-dev libfontconfig1-dev libass-dev libvorbis-dev libxvidcore-dev \
+  libx264-dev libx265-dev libnuma-dev libvpx-dev libmp3lame-dev libopus-dev \
+  libtheora-dev libwebp-dev libspeex-dev libtesseract-dev \
+  libdav1d-dev libaom-dev libgme-dev libbluray-dev libvulkan-dev \
+  liblzma-dev libzimg-dev libzvbi-dev librsvg2-dev libvidstab-dev libsoxr-dev \
+  librist-dev libmodplug-dev libopenmpt-dev libssh-dev libvidstab-dev \
+  frei0r-plugins-dev libaribb24-dev libcdio-dev libcdio++-dev libdvdread-dev \
+  libdvdnav-dev libtiff-dev libpng-dev libsnappy-dev libfdk-aac-dev \
+  libbrotli-dev
 
 # UFW setup
 info "Configuring UFW firewall..."
