@@ -99,7 +99,8 @@ apt-get install -y \
   curl wget git jq vim neovim tmux traceroute net-tools iputils-ping \
   tcpdump nmap dnsutils whois build-essential software-properties-common \
   htop ca-certificates ufw make libssl-dev zlib1g-dev libbz2-dev \
-  libreadline-dev libsqlite3-dev libffi-dev liblzma-dev
+  libreadline-dev libsqlite3-dev libffi-dev liblzma-dev postgresql \
+  postgresql-contrib libpq-dev python3-dev
 
 # UFW setup
 info "Configuring UFW firewall..."
@@ -151,7 +152,7 @@ if ! grep -q "Persistent History" "$HOME/.bashrc"; then
 shopt -s histappend
 
 # Save and reload after each command
-PROMPT_COMMAND="history -a; history -n; \$PROMPT_COMMAND"
+PROMPT_COMMAND="history -a; history -n"
 
 # Bigger history limits
 export HISTSIZE=100000
@@ -165,15 +166,15 @@ info "Fetching and overwriting custom .vimrc from GitHub..."
 info "TARGET_USER: ${TARGET_USER} REPO_URL: ${REPO_URL} REPO_CONFIG_DIR: ${REPO_CONFIG_DIR} HOME: $USER_HOME"
 sudo -u "${TARGET_USER}" bash -c "curl -sSL '${REPO_URL}/${REPO_CONFIG_DIR}/.vimrc' -o '$USER_HOME/.vimrc'"
 
+info "Setting alias vi='vim' in ${TARGET_USER}'s .bashrc if it does not exist..."
+sudo -u "${TARGET_USER}" bash <<'EOF'
+if ! grep -q "alias vi='vim'" "$HOME/.bashrc"; then
+  echo "alias vi='vim'" >> "$HOME/.bashrc"
+fi
+EOF
 
-# --- NVM (Idempotent) ---
-# info "Installing nvm and Node.js LTS..."
-# sudo -u "${TARGET_USER}"  bash -c "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash"
-# sudo -u "${TARGET_USER}" bash -c "export NVM_DIR=\"\$HOME/.nvm\" && [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\"  && nvm use --lts && pnpm install --global yarn"
-# sudo -u "${TARGET_USER}" bash -c "nvm install --lts"
-# sudo -u "${TARGET_USER}" bash -c "nvm use --lts"
-# sudo -u "${TARGET_USER}" bash -c "npm install --global pnpm"
-# --- NVM & pnpm (Idempotent) ---
+
+# NPM/NVM
 info "Installing nvm, pnpm, and Node.js LTS..."
 
 sudo -u "${TARGET_USER}" bash <<'EOF'
