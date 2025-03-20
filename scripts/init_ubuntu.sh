@@ -121,7 +121,16 @@ apt-get install -y \
   librist-dev libmodplug-dev libopenmpt-dev libssh-dev libvidstab-dev \
   frei0r-plugins-dev libaribb24-dev libcdio-dev libcdio++-dev libdvdread-dev \
   libdvdnav-dev libtiff-dev libpng-dev libsnappy-dev libfdk-aac-dev \
-  libbrotli-dev
+  libbrotli-dev libopenjp2-7 libopenjp2-7-dev librtmp-dev pkg-config tesseract-ocr \
+  libtesseract-dev libleptonica-dev libgif-dev libtwolame-dev meson ninja-build \
+  doxygen libzmq3-dev libcdio-paranoia-dev vulkan-tools libvulkan-dev \
+  vulkan-utility-libraries-dev spirv-tools glslang-dev
+
+  # apt-get install -y nvidia-cuda-toolkit
+
+# Install Rust for the target user
+info "SKIPPING !!! Installing Rust for ${TARGET_USER}..."
+#sudo -u "${TARGET_USER}" bash -c 'curl https://sh.rustup.rs -sSf | sh -s -- -y'
 
 # UFW setup
 info "Configuring UFW firewall..."
