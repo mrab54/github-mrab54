@@ -248,44 +248,41 @@ info "Installing pyenv and a newer Python version..."
 sudo -u "${TARGET_USER}" bash <<'EOF'
 set -euo pipefail
 
-# 1) Define $PYENV_ROOT before any usage
-export PYENV_ROOT="${PYENV_ROOT:-"$HOME/.pyenv"}"
-export PATH="$PYENV_ROOT/bin:$PATH"
-
-# 2) If pyenv not present, clone it
-if [ ! -d "$PYENV_ROOT" ]; then
-  git clone https://github.com/pyenv/pyenv.git "$PYENV_ROOT"
+# 1. Install pyenv if it's not already installed
+if [ ! -d "$HOME/.pyenv" ]; then
+  echo "Pyenv not found, installing pyenv..."
+  curl https://pyenv.run | bash             # Install pyenv automatically
+  # You might also need to install build dependencies for Python here, e.g. using apt or yum
 fi
 
-# 3) Make pyenv initialization persistent
-if ! grep -q 'export PYENV_ROOT=' "$HOME/.bashrc"; then
-  cat <<'BASHRC' >> "$HOME/.bashrc"
-
-# ---- pyenv setup ----
+# 2. Set up pyenv environment variables for this script
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
-BASHRC
-fi
 
-# 4) Actually initialize in this shell
-eval "$(pyenv init -)"
-
-# 5) Install the latest stable python
-LATEST_STABLE=$(pyenv install --list \
-  | grep -E '^\s*3\.[0-9]+\.[0-9]+$' \
-  | grep -v 'dev\|a\|b\|rc' \
-  | sort -V | tail -1 | tr -d '[:space:]')
-
-if [[ -z "$LATEST_STABLE" ]]; then
-  echo "Could not determine latest stable Python version. Defaulting to 3.13.2"
-  LATEST_STABLE="3.13.2"
+# 3. Initialize pyenv in the current shell session
+if command -v pyenv >/dev/null 2>&1; then
+  eval "$(pyenv init -)"  # Load pyenv shim scripts and functions&#8203;:contentReference[oaicite:6]{index=6}
+  # If using pyenv-virtualenv, also do: eval "$(pyenv virtualenv-init -)"
 else
-  echo "Latest stable Python version: $LATEST_STABLE"
+  echo "ERROR: pyenv command not found on PATH. Check that installation succeeded and PATH is set."
+  exit 1
 fi
 
-pyenv install -s "$LATEST_STABLE"
-pyenv global "$LATEST_STABLE"
+# 4. Determine the latest stable Python version available
+# Using pyenv plugin (if installed):
+# latest_python_version=$(pyenv latest install)   # This requires the 'pyenv latest' plugin
+#
+# Or without plugin, parse the list of installable versions:
+latest_python_version=$(pyenv install -l | grep -E '^[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+$' | tail -1)
+echo "Latest stable Python version is $latest_python_version"
+
+# 5. Install the latest stable Python using pyenv
+pyenv install "$latest_python_version"
+
+# (Optional) Set this version as the global default
+pyenv global "$latest_python_version"
+
+echo "Pyenv has been initialized and Python $latest_python_version is installed."
 EOF
 
 # --- Clean Up ---
