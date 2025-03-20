@@ -118,13 +118,13 @@ apt-get install -y \
   libtheora-dev libwebp-dev libspeex-dev libtesseract-dev \
   libdav1d-dev libaom-dev libgme-dev libbluray-dev libvulkan-dev \
   liblzma-dev libzimg-dev libzvbi-dev librsvg2-dev libvidstab-dev libsoxr-dev \
-  librist-dev libmodplug-dev libopenmpt-dev libssh-dev libvidstab-dev \
+  libmodplug-dev libopenmpt-dev libssh-dev libvidstab-dev \
   frei0r-plugins-dev libaribb24-dev libcdio-dev libcdio++-dev libdvdread-dev \
   libdvdnav-dev libtiff-dev libpng-dev libsnappy-dev libfdk-aac-dev \
   libbrotli-dev libopenjp2-7 libopenjp2-7-dev librtmp-dev pkg-config tesseract-ocr \
   libtesseract-dev libleptonica-dev libgif-dev libtwolame-dev meson ninja-build \
   doxygen libzmq3-dev libcdio-paranoia-dev vulkan-tools libvulkan-dev \
-  vulkan-utility-libraries-dev spirv-tools glslang-dev
+  spirv-tools glslang-dev
 
   # apt-get install -y nvidia-cuda-toolkit
 
