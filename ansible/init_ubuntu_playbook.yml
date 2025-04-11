@@ -147,6 +147,14 @@
       ansible.builtin.package_facts:
         manager: auto
 
+    - name: Detect system architecture
+      ansible.builtin.set_fact:
+        is_arm_architecture: "{{ ansible_architecture.startswith('arm') or ansible_architecture == 'aarch64' }}"
+
+    - name: Set repository URLs based on architecture
+      ansible.builtin.set_fact:
+        ubuntu_repo_url: "{% if is_arm_architecture %}http://ports.ubuntu.com/ubuntu-ports{% else %}http://archive.ubuntu.com/ubuntu{% endif %}"
+
   tasks:
     - name: Ensure target user exists
       ansible.builtin.user:
@@ -167,13 +175,13 @@
 
     - name: Add Universe repository
       ansible.builtin.apt_repository:
-        repo: deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe
+        repo: "deb {{ ubuntu_repo_url }} {{ ansible_distribution_release }} universe"
         state: present
         update_cache: no
 
     - name: Add Multiverse repository
       ansible.builtin.apt_repository:
-        repo: deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} multiverse
+        repo: "deb {{ ubuntu_repo_url }} {{ ansible_distribution_release }} multiverse"
         state: present
         update_cache: yes
 
