@@ -235,18 +235,13 @@
         state: enabled
 
     # --- SSH Configuration ---
-    - name: Check if openssh-server is installed
-      ansible.builtin.command: dpkg -l openssh-server
-      register: openssh_check
-      changed_when: false
-      failed_when: false
-
     - name: Install openssh-server if not present
       ansible.builtin.apt:
         name: openssh-server
         state: present
         update_cache: yes
-      when: openssh_check.rc != 0
+      # Use package_facts gathered in pre_tasks to check if the package is installed
+      when: "'openssh-server' not in ansible_facts.packages"
 
     - name: Check if sshd_config exists
       ansible.builtin.stat:
