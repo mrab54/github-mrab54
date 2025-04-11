@@ -235,6 +235,19 @@
         state: enabled
 
     # --- SSH Configuration ---
+    - name: Check if openssh-server is installed
+      ansible.builtin.command: dpkg -l openssh-server
+      register: openssh_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install openssh-server if not present
+      ansible.builtin.apt:
+        name: openssh-server
+        state: present
+        update_cache: yes
+      when: openssh_check.rc != 0
+
     - name: Ensure .ssh directory exists for target user
       ansible.builtin.file:
         path: "{{ ssh_dir }}"
