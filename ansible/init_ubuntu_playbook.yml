@@ -1,0 +1,526 @@
+---
+- name: Bootstrap Ubuntu System
+  hosts: localhost
+  connection: local
+  become: yes
+  vars:
+    github_username: "mrab54"
+    repo_name: "github-mrab54"
+    repo_base_url: "https://raw.githubusercontent.com/{{ github_username }}/{{ repo_name }}/master"
+    repo_config_dir: "config"
+    # target_user: "{{ lookup('env', 'SUDO_USER') }}" # Get user who invoked sudo - requires passing via -e
+    user_home: "/home/{{ target_user }}"
+    ssh_dir: "{{ user_home }}/.ssh"
+    pub_key_url: "{{ repo_base_url }}/{{ repo_config_dir }}/rab.pub"
+    vimrc_url: "{{ repo_base_url }}/{{ repo_config_dir }}/.vimrc"
+    nvm_version: "v0.40.2"
+    python_build_deps:
+      - make
+      - build-essential
+      - libssl-dev
+      - zlib1g-dev
+      - libbz2-dev
+      - libreadline-dev
+      - libsqlite3-dev
+      - wget
+      - curl
+      - llvm
+      - libncurses5-dev
+      - libncursesw5-dev
+      - xz-utils
+      - tk-dev
+      - libffi-dev
+      - liblzma-dev
+      - python3-openssl
+      - git
+    packages_to_install:
+      - nasm
+      - yasm
+      - curl
+      - wget
+      - git
+      - jq
+      - vim
+      - neovim
+      - tmux
+      - traceroute
+      - net-tools
+      - iputils-ping
+      - tcpdump
+      - nmap
+      - dnsutils
+      - whois
+      - build-essential
+      - software-properties-common
+      - htop
+      - ca-certificates
+      - ufw
+      - make
+      - libssl-dev
+      - zlib1g-dev
+      - libbz2-dev
+      - libreadline-dev
+      - libsqlite3-dev
+      - libffi-dev
+      - liblzma-dev
+      - postgresql
+      - postgresql-contrib
+      - libpq-dev
+      - python3-dev
+      - glances
+      - libgl1
+      - autoconf
+      - automake
+      - cmake
+      - libtool
+      - pkg-config
+      - texinfo
+      - libass-dev
+      - libfreetype6-dev
+      - libgnutls28-dev
+      - libvorbis-dev
+      - libx264-dev
+      - libx265-dev
+      - libnuma-dev
+      - libvpx-dev
+      - libfdk-aac-dev
+      - libmp3lame-dev
+      - libopus-dev
+      - libunistring-dev
+      - libdrm-dev
+      - libxext-dev
+      - libxfixes-dev
+      - libxml2-dev
+      - libfribidi-dev
+      - libfontconfig1-dev
+      - libxvidcore-dev
+      - libtheora-dev
+      - libwebp-dev
+      - libspeex-dev
+      - libtesseract-dev
+      - libdav1d-dev
+      - libaom-dev
+      - libgme-dev
+      - libbluray-dev
+      - libvulkan-dev
+      - libzimg-dev
+      - libzvbi-dev
+      - librsvg2-dev
+      - libvidstab-dev
+      - libsoxr-dev
+      - libmodplug-dev
+      - libopenmpt-dev
+      - libssh-dev
+      - frei0r-plugins-dev
+      - libaribb24-dev
+      - libcdio-dev
+      - libcdio++-dev
+      - libdvdread-dev
+      - libdvdnav-dev
+      - libtiff-dev
+      - libpng-dev
+      - libsnappy-dev
+      - libbrotli-dev
+      - libopenjp2-7
+      - libopenjp2-7-dev
+      - librtmp-dev
+      - tesseract-ocr
+      - libleptonica-dev
+      - libgif-dev
+      - libtwolame-dev
+      - meson
+      - ninja-build
+      - doxygen
+      - libzmq3-dev
+      - libcdio-paranoia-dev
+      - vulkan-tools
+      - spirv-tools
+      - glslang-dev
+
+  pre_tasks:
+    - name: Ensure target_user variable is set
+      ansible.builtin.fail:
+        msg: "The 'target_user' variable is not defined. Please run the playbook with '-e target_user=<username>' (e.g., -e 'target_user=$SUDO_USER')."
+      when: target_user is not defined or target_user == ""
+
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+  tasks:
+    - name: Ensure target user exists
+      ansible.builtin.user:
+        name: "{{ target_user }}"
+        state: present
+        home: "{{ user_home }}"
+        shell: /bin/bash
+        system: yes
+        group: "{{ target_user }}"
+
+    - name: Ensure user home directory ownership
+      ansible.builtin.file:
+        path: "{{ user_home }}"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0755'
+
+    - name: Add Universe repository
+      ansible.builtin.apt_repository:
+        repo: deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe
+        state: present
+        update_cache: no
+
+    - name: Add Multiverse repository
+      ansible.builtin.apt_repository:
+        repo: deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} multiverse
+        state: present
+        update_cache: yes
+
+    - name: Update apt cache (redundant if done above, but safe)
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade all packages
+      ansible.builtin.apt:
+        upgrade: dist
+        update_cache: yes
+
+    - name: Install required system packages
+      ansible.builtin.apt:
+        name: "{{ packages_to_install }}"
+        state: present
+        update_cache: yes
+
+    # --- Rust Installation
+    - name: Check if Rust is installed for target user
+      ansible.builtin.stat:
+        path: "{{ user_home }}/.cargo/bin/rustc"
+      register: rustc_stat
+      become: yes
+      become_user: "{{ target_user }}"
+
+    - name: Install Rust for target user
+      ansible.builtin.shell:
+        cmd: "curl https://sh.rustup.rs -sSf | sh -s -- -y"
+        creates: "{{ user_home }}/.cargo/bin/rustc"
+      when: not rustc_stat.stat.exists
+      become: yes
+      become_user: "{{ target_user }}"
+      environment:
+        HOME: "{{ user_home }}"
+        USER: "{{ target_user }}"
+
+    # --- UFW Configuration ---
+    - name: Set UFW default policy to deny incoming
+      community.general.ufw:
+        default: deny
+        direction: incoming
+
+    - name: Allow specific ports via UFW
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - '22'
+        - '80'
+        - '8080'
+        - '3000'
+        - '3030'
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+
+    # --- SSH Configuration ---
+    - name: Ensure .ssh directory exists for target user
+      ansible.builtin.file:
+        path: "{{ ssh_dir }}"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0700'
+
+    - name: Download SSH public key
+      ansible.builtin.get_url:
+        url: "{{ pub_key_url }}"
+        dest: "/tmp/{{ target_user }}.pub"
+        mode: '0644'
+      register: downloaded_key
+      failed_when: false
+
+    - name: Add SSH public key to authorized_keys if downloaded
+      ansible.builtin.lineinfile:
+        path: "{{ ssh_dir }}/authorized_keys"
+        line: "{{ lookup('file', '/tmp/' + target_user + '.pub') }}"
+        create: yes
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0600'
+      when: downloaded_key.dest is defined and downloaded_key.dest != ""
+      notify: Ensure authorized_keys permissions
+
+    - name: Clean up temporary public key file
+      ansible.builtin.file:
+        path: "/tmp/{{ target_user }}.pub"
+        state: absent
+      when: downloaded_key.dest is defined and downloaded_key.dest != ""
+
+    - name: Backup sshd_config
+      ansible.builtin.copy:
+        src: /etc/ssh/sshd_config
+        dest: "/etc/ssh/sshd_config.bak.{{ ansible_date_time.iso8601_basic_short }}"
+        remote_src: yes
+        force: no
+        mode: preserve
+
+    - name: Configure sshd_config settings
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^#?{{ item.key }}\\s+"
+        line: "{{ item.key }} {{ item.value }}"
+        state: present
+        validate: '/usr/sbin/sshd -t -f %s'
+      loop:
+        - { key: 'PasswordAuthentication', value: 'yes' }
+        - { key: 'PermitRootLogin', value: 'no' }
+        - { key: 'UsePAM', value: 'yes' }
+      notify: Restart sshd
+
+    # --- User Shell Configuration ---
+    - name: Configure persistent bash history for target user
+      ansible.builtin.blockinfile:
+        path: "{{ user_home }}/.bashrc"
+        block: |
+          # -------------- Persistent History --------------
+          # Append to history, don't overwrite
+          shopt -s histappend
+
+          # Save and reload after each command
+          PROMPT_COMMAND="history -a; history -n"
+
+          # Bigger history limits
+          export HISTSIZE=100000
+          export HISTFILESIZE=100000
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - Persistent History"
+        create: yes
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0644'
+      become: yes
+      become_user: "{{ target_user }}"
+
+    - name: Fetch and overwrite custom .vimrc for target user
+      ansible.builtin.get_url:
+        url: "{{ vimrc_url }}"
+        dest: "{{ user_home }}/.vimrc"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0644'
+        force: yes
+      become: yes
+      become_user: "{{ target_user }}"
+
+    - name: Ensure vi alias exists in .bashrc for target user
+      ansible.builtin.lineinfile:
+        path: "{{ user_home }}/.bashrc"
+        line: "alias vi='vim'"
+        regexp: "^alias vi='vim'$"
+        state: present
+        create: yes
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0644'
+      become: yes
+      become_user: "{{ target_user }}"
+
+    # --- NVM / Node.js / pnpm ---
+    - name: Check if NVM is installed
+      ansible.builtin.stat:
+        path: "{{ user_home }}/.nvm/nvm.sh"
+      register: nvm_stat
+      become: yes
+      become_user: "{{ target_user }}"
+
+    - name: Install NVM for target user
+      ansible.builtin.shell:
+        cmd: "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/{{ nvm_version }}/install.sh | bash"
+        creates: "{{ user_home }}/.nvm/nvm.sh"
+      when: not nvm_stat.stat.exists
+      become: yes
+      become_user: "{{ target_user }}"
+      environment:
+        HOME: "{{ user_home }}"
+        USER: "{{ target_user }}"
+
+    - name: Install Node.js LTS using NVM
+      ansible.builtin.shell:
+        cmd: ". {{ user_home }}/.nvm/nvm.sh && nvm install --lts && nvm alias default lts"
+        executable: /bin/bash
+        creates: "{{ user_home }}/.nvm/versions/node"
+      become: yes
+      become_user: "{{ target_user }}"
+      environment:
+        HOME: "{{ user_home }}"
+        USER: "{{ target_user }}"
+        NVM_DIR: "{{ user_home }}/.nvm"
+
+    - name: Check if pnpm is installed
+      ansible.builtin.stat:
+        path: "{{ user_home }}/.local/share/pnpm/pnpm"
+      register: pnpm_stat
+      become: yes
+      become_user: "{{ target_user }}"
+
+    - name: Install pnpm for target user
+      ansible.builtin.shell:
+        cmd: "curl -fsSL https://get.pnpm.io/install.sh | sh -"
+        creates: "{{ user_home }}/.local/share/pnpm/pnpm"
+      when: not pnpm_stat.stat.exists
+      become: yes
+      become_user: "{{ target_user }}"
+      environment:
+        HOME: "{{ user_home }}"
+        USER: "{{ target_user }}"
+
+    - name: Configure pnpm environment in .bashrc for target user
+      ansible.builtin.blockinfile:
+        path: "{{ user_home }}/.bashrc"
+        block: |
+          # ---- pnpm setup ----
+          export PNPM_HOME="$HOME/.local/share/pnpm"
+          export PATH="$PNPM_HOME:$PATH"
+          # eval "$(pnpm env use --shell bash)" # This might be better run interactively or sourced
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - PNPM Env"
+        create: yes
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0644'
+      become: yes
+      become_user: "{{ target_user }}"
+
+    - name: Install yarn globally via pnpm
+      ansible.builtin.shell:
+        cmd: ". {{ user_home }}/.nvm/nvm.sh && export PNPM_HOME={{ user_home }}/.local/share/pnpm && export PATH=$PNPM_HOME:$PATH && pnpm add --global yarn"
+        executable: /bin/bash
+        creates: "{{ user_home }}/.local/share/pnpm/yarn"
+      become: yes
+      become_user: "{{ target_user }}"
+      environment:
+        HOME: "{{ user_home }}"
+        USER: "{{ target_user }}"
+        NVM_DIR: "{{ user_home }}/.nvm"
+        # PNPM_HOME needed for pnpm global install location
+
+    # --- pyenv / Python ---
+    - name: Install Python build dependencies
+      ansible.builtin.apt:
+        name: "{{ python_build_deps }}"
+        state: present
+
+    - name: Check if pyenv is installed
+      ansible.builtin.stat:
+        path: "{{ user_home }}/.pyenv/bin/pyenv"
+      register: pyenv_stat
+      become: yes
+      become_user: "{{ target_user }}"
+
+    - name: Install pyenv for target user
+      ansible.builtin.shell:
+        cmd: "curl https://pyenv.run | bash"
+        creates: "{{ user_home }}/.pyenv/bin/pyenv"
+      when: not pyenv_stat.stat.exists
+      become: yes
+      become_user: "{{ target_user }}"
+      environment:
+        HOME: "{{ user_home }}"
+        USER: "{{ target_user }}"
+
+    - name: Add pyenv configuration to .bashrc
+      ansible.builtin.blockinfile:
+        path: "{{ user_home }}/.bashrc"
+        block: |
+          # ---- pyenv setup ----
+          export PYENV_ROOT="$HOME/.pyenv"
+          export PATH="$PYENV_ROOT/bin:$PATH"
+          if command -v pyenv 1>/dev/null 2>&1; then
+            eval "$(pyenv init -)"
+          fi
+          # Optional: If using pyenv-virtualenv
+          # if command -v pyenv 1>/dev/null 2>&1; then
+          #   eval "$(pyenv virtualenv-init -)"
+          # fi
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - Pyenv Env"
+        create: yes
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0644'
+      become: yes
+      become_user: "{{ target_user }}"
+
+    - name: Get latest stable Python version from pyenv
+      ansible.builtin.shell:
+        cmd: "export PYENV_ROOT={{ user_home }}/.pyenv && export PATH=$PYENV_ROOT/bin:$PATH && eval \"$(pyenv init -)\" && pyenv install --list | grep -E '^[[:space:]]*[0-9]+\\.[0-9]+\\.[0-9]+$' | tail -1 | tr -d '[:space:]'"
+        executable: /bin/bash
+      register: latest_python_version_cmd
+      changed_when: false
+      check_mode: no
+      become: yes
+      become_user: "{{ target_user }}"
+      environment:
+        HOME: "{{ user_home }}"
+        USER: "{{ target_user }}"
+
+    - name: Set latest python version fact
+      ansible.builtin.set_fact:
+        latest_python_version: "{{ latest_python_version_cmd.stdout }}"
+      when: latest_python_version_cmd.stdout is defined and latest_python_version_cmd.stdout != ""
+
+    - name: Install latest stable Python with pyenv
+      ansible.builtin.shell:
+        cmd: "export PYENV_ROOT={{ user_home }}/.pyenv && export PATH=$PYENV_ROOT/bin:$PATH && eval \"$(pyenv init -)\" && pyenv install {{ latest_python_version }}"
+        executable: /bin/bash
+        creates: "{{ user_home }}/.pyenv/versions/{{ latest_python_version }}/bin/python" # Idempotency
+      when: latest_python_version is defined and latest_python_version != ""
+      become: yes
+      become_user: "{{ target_user }}"
+      environment:
+        HOME: "{{ user_home }}"
+        USER: "{{ target_user }}"
+
+    - name: Set latest Python as global default with pyenv
+      ansible.builtin.shell:
+        cmd: "export PYENV_ROOT={{ user_home }}/.pyenv && export PATH=$PYENV_ROOT/bin:$PATH && eval \"$(pyenv init -)\" && pyenv global {{ latest_python_version }}"
+        executable: /bin/bash
+      when: latest_python_version is defined and latest_python_version != ""
+      become: yes
+      become_user: "{{ target_user }}"
+      environment:
+        HOME: "{{ user_home }}"
+        USER: "{{ target_user }}"
+      changed_when: "'global' in pyenv_global_result.stdout"
+      register: pyenv_global_result
+
+    # --- Clean Up ---
+    - name: Autoremove unused packages
+      ansible.builtin.apt:
+        autoremove: yes
+
+    - name: Autoclean apt cache
+      ansible.builtin.apt:
+        autoclean: yes
+
+  handlers:
+    - name: Restart sshd
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+
+    - name: Ensure authorized_keys permissions
+      ansible.builtin.file:
+        path: "{{ ssh_dir }}/authorized_keys"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: '0600'
