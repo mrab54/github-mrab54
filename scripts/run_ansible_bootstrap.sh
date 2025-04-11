@@ -36,21 +36,17 @@ info "Running bootstrap for user: ${TARGET_USER}"
 # --- Ensure Ansible is installed ---
 info "Checking for Ansible..."
 if ! command -v ansible-playbook &> /dev/null; then
-  warning "Ansible not found. Attempting to install..."
-  # Ensure pip is available
-  if ! command -v pip3 &> /dev/null; then
-    info "pip3 not found. Installing python3-pip..."
-    apt-get update -y
-    apt-get install -y python3-pip
-  fi
-  info "Installing Ansible using pip3..."
-  pip3 install ansible # Install system-wide as we are root
+  warning "Ansible not found. Attempting to install using apt..."
+  # Update package list first
+  apt-get update -y
+  # Install Ansible using the system package manager
+  apt-get install -y ansible
   # Verify installation
   if ! command -v ansible-playbook &> /dev/null; then
-    error "Ansible installation failed."
+    error "Ansible installation via apt failed."
     exit 1
   fi
-  info "Ansible installed successfully."
+  info "Ansible installed successfully via apt."
 else
   info "Ansible is already installed."
 fi
