@@ -151,9 +151,19 @@
       ansible.builtin.set_fact:
         is_arm_architecture: "{{ ansible_architecture.startswith('arm') or ansible_architecture == 'aarch64' }}"
 
+    - name: Debug - Display detected architecture
+      ansible.builtin.debug:
+        msg: 
+          - "Architecture: {{ ansible_architecture }}"
+          - "Is ARM: {{ is_arm_architecture }}"
+
     - name: Set repository URLs based on architecture
       ansible.builtin.set_fact:
         ubuntu_repo_url: "{% if is_arm_architecture %}http://ports.ubuntu.com/ubuntu-ports{% else %}http://archive.ubuntu.com/ubuntu{% endif %}"
+
+    - name: Debug - Display repository URL
+      ansible.builtin.debug:
+        msg: "Using repository URL: {{ ubuntu_repo_url }}"
 
   tasks:
     - name: Ensure target user exists
@@ -173,19 +183,70 @@
         group: "{{ target_user }}"
         mode: '0755'
 
-    - name: Add Universe repository
-      ansible.builtin.apt_repository:
-        repo: "deb {{ ubuntu_repo_url }} {{ ansible_distribution_release }} universe"
-        state: present
-        update_cache: no
+    # Clear existing repository configurations first
+    - name: Backup existing sources.list
+      ansible.builtin.copy:
+        src: /etc/apt/sources.list
+        dest: /etc/apt/sources.list.backup
+        remote_src: yes
+        force: no
 
-    - name: Add Multiverse repository
-      ansible.builtin.apt_repository:
-        repo: "deb {{ ubuntu_repo_url }} {{ ansible_distribution_release }} multiverse"
-        state: present
-        update_cache: yes
+    - name: Clear existing repositories
+      ansible.builtin.copy:
+        content: "# Managed by Ansible\n"
+        dest: /etc/apt/sources.list
+        force: yes
 
-    - name: Update apt cache (redundant if done above, but safe)
+    # Add all required repositories with correct architecture-specific URLs
+    - name: Configure Ubuntu repositories
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: /etc/apt/sources.list
+        force: yes
+      vars:
+        repo_url: "{{ ubuntu_repo_url }}"
+        release: "{{ ansible_distribution_release }}"
+      register: repo_update
+      with_first_found:
+        - files:
+            - "sources.list.j2"
+          skip: true
+
+    # Fallback if template is not found - create sources.list directly
+    - name: Configure Ubuntu repositories (fallback method)
+      ansible.builtin.lineinfile:
+        path: /etc/apt/sources.list
+        line: "deb {{ ubuntu_repo_url }} {{ ansible_distribution_release }} {{ item }}"
+        create: yes
+      loop:
+        - "main restricted"
+        - "universe"
+        - "multiverse"
+      when: repo_update.skipped is defined and repo_update.skipped
+
+    - name: Configure Ubuntu updates repositories (fallback method)
+      ansible.builtin.lineinfile:
+        path: /etc/apt/sources.list
+        line: "deb {{ ubuntu_repo_url }} {{ ansible_distribution_release }}-updates {{ item }}"
+        create: yes
+      loop:
+        - "main restricted"
+        - "universe"
+        - "multiverse" 
+      when: repo_update.skipped is defined and repo_update.skipped
+
+    - name: Configure Ubuntu security repositories (fallback method)
+      ansible.builtin.lineinfile:
+        path: /etc/apt/sources.list
+        line: "deb {{ ubuntu_repo_url }} {{ ansible_distribution_release }}-security {{ item }}"
+        create: yes
+      loop:
+        - "main restricted"
+        - "universe"
+        - "multiverse"
+      when: repo_update.skipped is defined and repo_update.skipped
+
+    - name: Update apt cache
       ansible.builtin.apt:
         update_cache: yes
         cache_valid_time: 3600
