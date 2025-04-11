@@ -305,7 +305,7 @@
         state: present
         validate: '/usr/sbin/sshd -t -f %s'
       loop:
-        - { key: 'PasswordAuthentication', value: 'yes' }
+        - { key: 'PasswordAuthentication', value: 'no' }
         - { key: 'PermitRootLogin', value: 'no' }
         - { key: 'UsePAM', value: 'yes' }
       notify: Restart sshd
